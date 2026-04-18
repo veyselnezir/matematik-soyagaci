@@ -46,10 +46,7 @@ svg{display:block;width:100%;height:auto;min-width:1500px;background:#fff;touch-
 
 
 
-<div style="padding:10px 20px 4px 20px;font-size:13px;line-height:1.5;font-family:Arial,Helvetica,sans-serif;max-width:1100px;">
-<b>Kullanım:</b> İsme tıklayınca bilgi penceresi açılır. Üstte kısa özet, altta Wikipedia içeriği görünür. Kesik çizgiler antik dönemde doğrudan danışmanlığı kesin bilinmeyen bağlantıları gösterir.
-</div>
-
+<div style="padding:8px 20px 0 20px;font-size:13px;line-height:1.45;font-family:Arial,Helvetica,sans-serif;max-width:1100px;"><b>Kullanım:</b> İsme tıklayınca bilgi penceresi açılır. Wikipedia sekmeleri içeride gösterilir; dış kaynaklar yeni sekmede açılır.</div>
 
 <div class="wrap">
   <div class="toolbar"><input id="searchBox" type="text" placeholder="İsim ara..." /><button id="fitBtn" title="Sığdır">⌂</button><button id="zoomOutBtn" title="Uzaklaştır">−</button><button id="zoomInBtn" title="Yakınlaştır">+</button><button id="resetBtn" title="Sıfırla">↺</button></div>
@@ -209,6 +206,26 @@ const wikiAliasEN = {
   'Sayyid Ajall Shams al-Din Omar al-Bukhari':'Ajall Shams al-Din Omar'
 };
 
+
+const unixLinks = {
+  'Şükrü İlgün':'https://unis.kafkas.edu.tr/akademisyen-detay/sukru.ilgun',
+  'Sercan Kazımoğlu':'https://unis.kafkas.edu.tr/akademisyen-detay/sercan.kazimoglu',
+  'Yücel Özkan':'https://unis.kafkas.edu.tr/akademisyen-detay/yucel.ozkan',
+  'Nigar Yıldırım Aksoy':'https://unis.kafkas.edu.tr/akademisyen-detay/nyaksoy55',
+  'Adem Yolcu':'https://unis.kafkas.edu.tr/akademisyen-detay/adem.yolcu',
+  'Taha Yasin Öztürk':'https://unis.kafkas.edu.tr/akademisyen-detay/taha36100',
+  'Yeşim Aküzüm Özen':'https://unis.kafkas.edu.tr/akademisyen-detay/ye%C5%9Fim.ak%C3%BCz%C3%BCm',
+  'Özgür Erdağ':'https://unis.kafkas.edu.tr/akademisyen-detay/ozgur.erdag',
+  'Ebru Ersarı':'https://unis.kafkas.edu.tr/akademisyen-detay/ebru.ersari',
+  'Nizami Mustafa':'https://unis.kafkas.edu.tr/akademisyen-detay/nizami.mustafa',
+  'Erhan Deniz':'https://unis.kafkas.edu.tr/akademisyen-detay/edeniz',
+  'Ömür Deveci':'https://unis.kafkas.edu.tr/akademisyen-detay/omur.deveci',
+  'Rabia Çakan Akpınar':'https://unis.kafkas.edu.tr/akademisyen-detay/rabiacakan',
+  'Gonca Canbek Çelikten':'https://unis.kafkas.edu.tr/akademisyen-detay/gonca.%C3%A7elikten',
+  'Veysel Nezir':'https://unis.kafkas.edu.tr/akademisyen-detay/veysel.nezir',
+  'Gabil Yagub':'https://unis.kafkas.edu.tr/akademisyen-detay/gabil.yagub'
+};
+
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));}
 function nameSearchLinks(name){
   const q = encodeURIComponent(name + ' matematikçi');
@@ -294,46 +311,25 @@ async function wikiParseHtml(title,lang){
   return null;
 }
 function frameDoc(title,body){
-  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><base target="_blank"><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;color:#1f2a44;line-height:1.6}img{max-width:240px;height:auto;border-radius:10px;display:block;margin:0 0 12px 0}.top{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d7e2f1}a{color:#2f5aa8;text-decoration:none}.btns a{display:inline-block;margin:6px 8px 0 0;padding:8px 10px;border:1px solid #d7e2f1;border-radius:10px;background:#eef4ff}table.infobox{float:right;margin:0 0 12px 18px;max-width:320px;font-size:14px}.mw-parser-output{font-size:15px}.mw-editsection,.reference,.reflist,.navbox,.metadata,.toc,.shortdescription{display:none!important}</style></head><body>
-
-<div style="display:flex;align-items:center;background:#f6f8fb;border-bottom:1px solid #ccc;padding:18px;font-family:Arial,Helvetica,sans-serif;">
-<img src="https://www.kafkas.edu.tr/tema/kafkasEymen/images/kau_logo.png" style="height:90px;margin-right:20px;">
-<div>
-<h1 style="margin:0;font-size:26px;">Kafkas Üniversitesi Fen Edebiyat Fakültesi Matematik Bölümü</h1>
-<h2 style="margin:3px 0 0 0;font-size:20px;font-weight:normal;">Matematik Soyağacı (Dedeler – Torunlar)</h2>
-</div>
-</div>
-
-<div style="padding:15px 20px;font-size:14px;line-height:1.6;font-family:Arial,Helvetica,sans-serif;max-width:1100px;">
-<b>Kullanım Bilgisi</b><br>
-• Grafikte yer alan akademisyen isimlerine tıklayarak ilgili kişi hakkında bilgi görüntüleyebilirsiniz.<br>
-• Açılan çerçevede Wikipedia Türkçe ve İngilizce sayfaları ile ilgili web sayfaları görüntülenmektedir.<br>
-• Grafikte yukarı doğru gidildikçe akademik danışmanlar, aşağı doğru gidildikçe öğrenciler (torunlar) görülmektedir.<br>
-• Kesik çizgiler tarihsel olarak doğrudan danışmanlık ilişkisi kesin olarak bilinmeyen bağlantıları göstermektedir.<br>
-• Düz çizgiler doğrulanmış akademik danışmanlık ilişkilerini göstermektedir.<br><br>
-
-<b>Not:</b> Özellikle bazı Türk akademisyenler için otomatik olarak Google üzerinden çekilen bilgiler
-aynı isimde farklı kişilere ait olabilir. Bu nedenle bazı bilgiler hatalı görünebilir.
-Zaman içerisinde gerekli düzenlemeler yapılacaktır.
-</div>
-<div class="top"><h2 style="margin:0 0 6px 0;">${esc(title)}</h2></div>${body}
-<div style="position:fixed;right:15px;bottom:10px;font-size:13px;background:rgba(255,255,255,0.9);
-padding:6px 10px;border-radius:6px;font-family:Arial,Helvetica,sans-serif;">
-Prof. Dr. Veysel Nezir ve Noura Nezir tarafından hazırlanmıştır.<br>
-Tüm hakları Kafkas Üniversitesi Fen Edebiyat Fakültesi Matematik Bölümüne aittir.
-</div>
-
-
-<div style="padding:10px 20px 18px 20px;font-size:9.5px;line-height:1.35;color:#5f6f8f;font-family:Arial,Helvetica,sans-serif;text-align:right;max-width:1200px;margin:0 auto;">
-  Prof. Dr. Veysel Nezir ve Noura Nezir tarafından hazırlanmıştır.<br>
-  Tüm hakları Kafkas Üniversitesi Fen Edebiyat Fakültesi Matematik Bölümüne aittir.
-</div>
-
-</body></html>`;
+  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><base target="_blank"><style>
+  body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;color:#1f2a44;line-height:1.6;background:#fff}
+  img{max-width:240px;height:auto;border-radius:10px;display:block;margin:0 0 12px 0}
+  .top{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d7e2f1}
+  a{color:#2f5aa8;text-decoration:none}
+  .btns a{display:inline-block;margin:6px 8px 0 0;padding:8px 10px;border:1px solid #d7e2f1;border-radius:10px;background:#eef4ff}
+  table.infobox{float:right;margin:0 0 12px 18px;max-width:320px;font-size:14px}
+  .mw-parser-output{font-size:15px}
+  .mw-editsection,.reference,.reflist,.navbox,.metadata,.toc,.shortdescription,.hatnote,.sidebar,.ambox,.plainlinks{display:none!important}
+  </style></head><body><div class="top"><h1 style="margin:0;font-size:18px">${esc(title)}</h1></div>${body}</body></html>`;
 }
 function searchHubDoc(n){
   const L=nameSearchLinks(n.name);
-  return frameDoc(n.name,`<p>Dış arama servisleri güvenlik nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.google}">Google aç</a><a href="${L.scholar}">Google Scholar aç</a><a href="${L.rg}">ResearchGate aç</a></div>`);
+  return frameDoc(n.name, `<p>Bu kaynak güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p>
+    <div class="btns">
+      <a href="${L.google}">Google aç</a>
+      <a href="${L.scholar}">Scholar aç</a>
+      <a href="${L.rg}">ResearchGate aç</a>
+    </div>`);
 }
 async function buildWikiDoc(name,lang){
   let title=await wikiLookupExact(name,lang);
@@ -369,16 +365,27 @@ function setActiveTab(kind){
 }
 async function loadTab(n,kind){
   setActiveTab(kind);
-  if(kind==='google'){ infoFrame.srcdoc=searchHubDoc(n); return; }
-  if(kind==='scholar'){ const L=nameSearchLinks(n.name); infoFrame.srcdoc=frameDoc(n.name,`<p>Google Scholar güvenlik nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.scholar}">Google Scholar aç</a></div>`); return; }
-  if(kind==='rg'){ const L=nameSearchLinks(n.name); infoFrame.srcdoc=frameDoc(n.name,`<p>ResearchGate güvenlik nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.rg}">ResearchGate aç</a></div>`); return; }
+  const L=nameSearchLinks(n.name);
+  if(kind==='google'){ infoFrame.srcdoc=frameDoc(n.name,`<p>Google sonuçları güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.google}">Yeni sayfada aç</a></div>`); return; }
+  if(kind==='scholar'){ infoFrame.srcdoc=frameDoc(n.name,`<p>Google Scholar sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.scholar}">Yeni sayfada aç</a></div>`); return; }
+  if(kind==='rg'){ infoFrame.srcdoc=frameDoc(n.name,`<p>ResearchGate sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.rg}">Yeni sayfada aç</a></div>`); return; }
+  if(kind==='unix'){
+    const u = unixLinks[n.name];
+    if(!u){ infoFrame.srcdoc=frameDoc(n.name,`<p>UNİS bağlantısı tanımlı değil.</p>`); return; }
+    // Try direct iframe first
+    infoFrame.removeAttribute('srcdoc');
+    infoFrame.src = u;
+    return;
+  }
   if(kind==='trwiki'){
+    infoFrame.removeAttribute('src');
     infoFrame.srcdoc=frameDoc(n.name,'<p>Türkçe Wikipedia yükleniyor...</p>');
     let doc=await buildWikiDoc(n.name,'tr');
     if(doc.includes('Wikipedia sayfası bulunamadı')) doc=await buildWikiDoc(n.name,'en');
     infoFrame.srcdoc=doc; return;
   }
   if(kind==='enwiki'){
+    infoFrame.removeAttribute('src');
     infoFrame.srcdoc=frameDoc(n.name,'<p>English Wikipedia is loading...</p>');
     let doc=await buildWikiDoc(n.name,'en');
     if(doc.includes('Wikipedia sayfası bulunamadı')) doc=await buildWikiDoc(n.name,'tr');
@@ -392,26 +399,26 @@ async function openPanel(n){
   panelSummary.textContent='Bilgi yükleniyor...';
   panelLinks.innerHTML='';
   frameTabs.innerHTML='';
+  infoFrame.removeAttribute('src');
   infoFrame.srcdoc=frameDoc(n.name,'<p>Yükleniyor...</p>');
   const L=nameSearchLinks(n.name);
-  panelLinks.innerHTML='';
   const mk=(kind,label,url)=>{ const wrap=document.createElement('span'); wrap.className='tabgrp'; const b=document.createElement('button'); b.textContent=label; b.dataset.kind=kind; b.onclick=()=>loadTab(n,kind); const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener'; a.className='miniout'; a.textContent='↗'; wrap.appendChild(b); wrap.appendChild(a); frameTabs.appendChild(wrap); };
   mk('trwiki','Wikipedia TR',L.wikiTRSearch);
   mk('enwiki','Wikipedia EN',L.wikiENSearch);
+  if(unixLinks[n.name]) mk('unix','UNİS',unixLinks[n.name]);
   mk('google','Google',L.google);
   mk('scholar','Scholar',L.scholar);
   mk('rg','ResearchGate',L.rg);
-  const summary=await buildSummary(n);
-  if(summary){
-    const s=summary.sum;
-    const img=s.thumbnail?.source?`<img src="${s.thumbnail.source}" alt="">`:'';
-    panelSummary.innerHTML=`${img}<strong>${esc(summary.title)}</strong>${s.description?`<br><em>${esc(s.description)}</em>`:''}<br><br>${esc(s.extract||'Özet bulunamadı.')}`;
-  }else{
-    // fallback using alias + direct search links
-    panelSummary.innerHTML='Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
-  }
-  const defaultTab='trwiki';
-  loadTab(n,defaultTab);
+  buildSummary(n).then(summary=>{
+    if(summary){
+      const s=summary.sum;
+      const img=s.thumbnail?.source?`<img src="${s.thumbnail.source}" alt="">`:'';
+      panelSummary.innerHTML=`${img}<strong>${esc(summary.title)}</strong>${s.description?`<br><em>${esc(s.description)}</em>`:''}<br><br>${esc(s.extract||'Özet bulunamadı.')}`;
+    }else{
+      panelSummary.innerHTML='Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
+    }
+  });
+  loadTab(n,'trwiki');
 }
 document.getElementById('closePanel').addEventListener('click',()=>backdrop.classList.remove('open')); backdrop.addEventListener('click',(e)=>{if(e.target===backdrop) backdrop.classList.remove('open');});
 searchBox.addEventListener('input',()=>{const q=searchBox.value.toLowerCase().trim(); nodes.forEach(n=>n._g?.classList.toggle('highlight',!!q && n.name.toLowerCase().includes(q)));});
