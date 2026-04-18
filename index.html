@@ -44,6 +44,19 @@ svg{display:block;width:100%;height:auto;min-width:1500px;background:#fff;touch-
 #infoFrame{width:100%;height:58vh;border:0;background:#fff}
 
 .note2{font-size:13px;color:var(--muted);margin-top:8px}
+
+@media (max-width: 700px){
+  .wrap{padding:8px}
+  .toolbar{gap:6px}
+  .toolbar input{min-width:0;font-size:16px}
+  .card{padding:6px}
+  svg{min-width:100% !important}
+  .panel-backdrop.open{align-items:flex-start;justify-content:center;padding:8px}
+  .panel{width:100%;max-height:calc(100vh - 16px);padding:12px 12px 14px;border-radius:18px;margin-top:0}
+  .close{position:sticky;top:0;right:auto;float:right;z-index:5;width:48px;height:48px;line-height:44px;font-size:34px}
+  #infoFrame{height:50vh}
+}
+
 </style>
 </head>
 <body>
@@ -136,10 +149,16 @@ function focusNodeOnScreen(n, scale=currentScale, yPad=90){
 function fitInitialView(){
   const card = svg.closest('.card');
   const W = card ? card.clientWidth : svg.clientWidth || 1200;
-  const topSpan = 1200; // show upper region instead of blank far left/right
-  const fitScale = Math.max(0.32, Math.min(1.0, (W-40)/topSpan));
+  const isMobile = window.innerWidth <= 700;
+  const fitScale = isMobile ? 0.62 : Math.max(0.32, Math.min(1.0, (W-40)/1200));
   const thales = nodes.find(n=>n.name==='Thales') || nodes[0];
-  focusNodeOnScreen(thales, fitScale, 80);
+  focusNodeOnScreen(thales, fitScale, isMobile ? 60 : 80);
+}
+function initViewport(){
+  fitInitialView();
+  requestAnimationFrame(()=>fitInitialView());
+  setTimeout(()=>fitInitialView(), 120);
+  setTimeout(()=>fitInitialView(), 450);
 }
 function blinkAndFocus(n){
   nodes.forEach(x=>x._g?.classList.remove('searchhit','blink'));
@@ -269,6 +288,7 @@ const unixLinks = {
 };
 
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));}
+function normName(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
 function nameSearchLinks(name){
   const q = encodeURIComponent(name + ' matematikçi');
   const yq = encodeURIComponent(name + ' matematikian mathematician matematikçi');
@@ -280,24 +300,32 @@ function nameSearchLinks(name){
   };
 }
 async function wikiLookupExact(name,lang){
+  if (unixLinks[name] && !famousTurkishWiki.has(name)) return null;
   const alias = lang==='tr' ? wikiAliasTR[name] : wikiAliasEN[name];
   const tries = [];
   if (alias !== undefined && alias !== null) tries.push(alias || name);
   tries.push(name);
-  // Turkish name normalization fallbacks
   tries.push(name.replace(/İ/g,'I').replace(/ı/g,'i'));
   tries.push(name.replace(/Ş/g,'S').replace(/ş/g,'s').replace(/Ç/g,'C').replace(/ç/g,'c').replace(/Ü/g,'U').replace(/ü/g,'u').replace(/Ö/g,'O').replace(/ö/g,'o').replace(/Ğ/g,'G').replace(/ğ/g,'g'));
+  const want = normName(alias || name);
   for(const term of [...new Set(tries.filter(Boolean))]){
     try{
       const openSearch=`https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(term)}&limit=1&namespace=0&format=json&origin=*`;
       const arr=await fetch(openSearch).then(r=>r.ok?r.json():null);
-      if(arr && arr[1] && arr[1][0]) return arr[1][0];
+      const t = arr && arr[1] && arr[1][0] ? arr[1][0] : null;
+      if(t){
+        const got = normName(t);
+        if(got===want || got.startsWith(want+' ') || want.startsWith(got+' ')) return t;
+      }
     }catch(e){}
     try{
       const searchApi=`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&utf8=1&format=json&origin=*`;
       const js=await fetch(searchApi).then(r=>r.ok?r.json():null);
       const t=js?.query?.search?.[0]?.title;
-      if(t) return t;
+      if(t){
+        const got = normName(t);
+        if(got===want || got.startsWith(want+' ') || want.startsWith(got+' ')) return t;
+      }
     }catch(e){}
   }
   return null;
@@ -390,16 +418,21 @@ async function buildWikiDoc(name,lang){
   return frameDoc(title,body + `<p style="margin-top:14px"><a href="https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g,'_'))}">Wikipedia'da aç</a></p>`);
 }
 async function buildSummary(n){
+  if (unixLinks[n.name] && !famousTurkishWiki.has(n.name)) {
+    return Promise.resolve({title:n.name, lang:'unix', sum:{description:'UNİS akademisyen sayfası', extract:'Bu kişi için Kafkas Üniversitesi UNİS kaydı tanımlıdır. En doğru kurumsal bilgi için UNİS sekmesini kullanabilirsiniz.'}});
+  }
   const preferWiki=!n.turkish || famousTurkishWiki.has(n.name);
   const langOrder=preferWiki?['tr','en']:['en','tr'];
-  for(const lang of langOrder){
-    const title=await wikiLookupExact(n.name,lang);
-    if(title){
-      const sum=await wikiSummary(title,lang);
-      if(sum) return {title,lang,sum};
+  return (async ()=>{
+    for(const lang of langOrder){
+      const title=await wikiLookupExact(n.name,lang);
+      if(title){
+        const sum=await wikiSummary(title,lang);
+        if(sum) return {title,lang,sum};
+      }
     }
-  }
-  return null;
+    return null;
+  })();
 }
 function setActiveTab(kind){
   [...frameTabs.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b.dataset.kind===kind));
@@ -435,6 +468,7 @@ async function loadTab(n,kind){
 }
 async function openPanel(n){
   backdrop.classList.add('open');
+  const panelEl = backdrop.querySelector('.panel'); if(panelEl) panelEl.scrollTop = 0;
   panelTitle.textContent=n.name;
   panelMeta.textContent=n.turkish?'Türk matematikçi / akademisyen':'Matematikçi';
   panelSummary.innerHTML='<strong>Bilgi hazırlanıyor...</strong>'; 
@@ -456,10 +490,11 @@ async function openPanel(n){
       const img=s.thumbnail?.source?`<img src="${s.thumbnail.source}" alt="">`:'';
       panelSummary.innerHTML=`${img}<strong>${esc(summary.title)}</strong>${s.description?`<br><em>${esc(s.description)}</em>`:''}<br><br>${esc(s.extract||'Özet bulunamadı.')}`;
     }else{
-      panelSummary.innerHTML='Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
+      panelSummary.innerHTML = unixLinks[n.name] ? 'Bu kişi için kurumsal UNİS kaydı tanımlı. En doğru bilgi için UNİS sekmesini kullanabilirsiniz.' : 'Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
     }
   }), 10);
-  loadTab(n,'trwiki');
+  const defaultTab = (unixLinks[n.name] && !famousTurkishWiki.has(n.name)) ? 'unix' : 'trwiki';
+  loadTab(n, defaultTab);
 }
 document.getElementById('closePanel').addEventListener('click',()=>backdrop.classList.remove('open')); backdrop.addEventListener('click',(e)=>{if(e.target===backdrop) backdrop.classList.remove('open');});
 searchBox.addEventListener('input',()=>{
@@ -494,7 +529,7 @@ document.getElementById('zoomOutBtn').addEventListener('click',()=>{currentScale
 document.getElementById('fitBtn').addEventListener('click',()=>{fitInitialView();});
 document.getElementById('resetBtn').addEventListener('click',()=>{localStorage.removeItem('soyagaci_layout_v2'); fitInitialView();});
 const saved=localStorage.getItem('soyagaci_layout_v2'); if(saved){try{JSON.parse(saved).forEach(([id,x,y])=>{if(byId[id]){byId[id].x=x; byId[id].y=y;}});}catch(e){}}
-render(); fitInitialView(); window.addEventListener('resize',()=>{ if(!backdrop.classList.contains('open')) fitInitialView(); });
+render(); initViewport(); window.addEventListener('resize',()=>{ if(!backdrop.classList.contains('open')) initViewport(); }); window.addEventListener('pageshow', initViewport);
 </script>
 <div style="position:fixed;right:15px;bottom:10px;font-size:13px;background:rgba(255,255,255,0.9);
 padding:6px 10px;border-radius:6px;font-family:Arial,Helvetica,sans-serif;">
