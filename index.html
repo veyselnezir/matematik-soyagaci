@@ -72,6 +72,17 @@ svg{display:block;width:100%;height:auto;min-width:1100px;background:#fff;touch-
   .framebar{position:sticky;top:0;z-index:2}
 }
 
+
+.node-hit{touch-action:manipulation}
+.framebar button{transition:transform .08s ease, background .15s ease, color .15s ease, box-shadow .15s ease}
+.framebar button:active,.toolbar button:active{transform:scale(.96)}
+.framebar button.tapflash,.toolbar button.tapflash{box-shadow:0 0 0 3px rgba(47,111,223,.22) inset}
+@media (max-width:700px){
+  .panel-backdrop.open{align-items:flex-start !important}
+  .panel{margin-top:6px !important; max-height:calc(100vh - 12px) !important}
+  .close{position:sticky !important; top:0 !important; z-index:10 !important}
+}
+
 </style>
 </head>
 <body>
@@ -419,7 +430,255 @@ function frameDoc(title,body){
   .framebar{position:sticky;top:0;z-index:2}
 }
 
-</style></head><body>${body}</body></html>`;
+
+.node-hit{touch-action:manipulation}
+.framebar button{transition:transform .08s ease, background .15s ease, color .15s ease, box-shadow .15s ease}
+.framebar button:active,.toolbar button:active{transform:scale(.96)}
+.framebar button.tapflash,.toolbar button.tapflash{box-shadow:0 0 0 3px rgba(47,111,223,.22) inset}
+@media (max-width:700px){
+  .panel-backdrop.open{align-items:flex-start !important}
+  .panel{margin-top:6px !important; max-height:calc(100vh - 12px) !important}
+  .close{position:sticky !important; top:0 !important; z-index:10 !important}
+}
+
+</style></head><body>${body}
+<script>
+/* ---- v5 mobile/popup override ---- */
+(function(){
+  const svgEl = document.getElementById('treeSvg');
+  const viewportEl = document.getElementById('viewport');
+  const backdropEl = document.getElementById('infoBackdrop');
+  const closeBtnEl = document.getElementById('closePanel');
+  const searchEl = document.getElementById('searchBox');
+  const frameTabsEl = document.getElementById('frameTabs');
+  const infoFrameEl = document.getElementById('infoFrame');
+  const panelTitleEl = document.getElementById('panelTitle');
+  const panelMetaEl = document.getElementById('panelMeta');
+  const panelSummaryEl = document.getElementById('panelSummary');
+
+  function flashTap(el){
+    if(!el) return;
+    el.classList.add('tapflash');
+    setTimeout(()=>el.classList.remove('tapflash'), 220);
+  }
+
+  // Make button taps feel immediate on mobile
+  document.querySelectorAll('.toolbar button').forEach(btn=>{
+    btn.addEventListener('touchstart', ()=>flashTap(btn), {passive:true});
+  });
+
+  // Better initial mobile fit: Thales near top-center and tree visible
+  window.fitInitialView = function(){
+    const card = svgEl.closest('.card');
+    const W = card ? card.clientWidth : (svgEl.clientWidth || 1200);
+    const H = card ? card.clientHeight || window.innerHeight*0.72 : window.innerHeight*0.72;
+    const isMobile = window.innerWidth <= 700;
+    const th = (window.nodes||[]).find(n=>n.name==='Thales') || (window.nodes||[])[0];
+    if(!th) return;
+    let targetScale;
+    if(isMobile){
+      targetScale = Math.max(0.48, Math.min(0.72, (W-24) / 900));
+    }else{
+      targetScale = Math.max(0.55, Math.min(1.0, (W-120) / 1300));
+    }
+    window.currentScale = targetScale;
+    const cx = th.x + th.w/2;
+    const cy = th.y + th.h/2;
+    window.panX = W/2 - cx*window.currentScale;
+    window.panY = (isMobile ? 110 : 95) - cy*window.currentScale;
+    if(typeof window.applyView === 'function') window.applyView();
+  };
+
+  // Pinch zoom for mobile
+  let pinchDist = null, pinchScale = null;
+  function touchDistance(t1,t2){
+    const dx=t1.clientX-t2.clientX, dy=t1.clientY-t2.clientY;
+    return Math.hypot(dx,dy);
+  }
+  function touchCenter(t1,t2){
+    return {x:(t1.clientX+t2.clientX)/2, y:(t1.clientY+t2.clientY)/2};
+  }
+  function svgPoint(clientX, clientY){
+    const pt = svgEl.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    return pt.matrixTransform(svgEl.getScreenCTM().inverse());
+  }
+  svgEl.addEventListener('touchstart', (e)=>{
+    if(e.touches.length===2){
+      pinchDist = touchDistance(e.touches[0], e.touches[1]);
+      pinchScale = window.currentScale || 1;
+    }
+  }, {passive:true});
+  svgEl.addEventListener('touchmove', (e)=>{
+    if(e.touches.length===2 && pinchDist){
+      const d = touchDistance(e.touches[0], e.touches[1]);
+      const ratio = d / pinchDist;
+      const c = touchCenter(e.touches[0], e.touches[1]);
+      const p = svgPoint(c.x, c.y);
+      const oldScale = window.currentScale || 1;
+      const newScale = Math.max(0.22, Math.min(6, pinchScale * ratio));
+      window.currentScale = newScale;
+      window.panX = c.x - p.x * newScale;
+      window.panY = c.y - p.y * newScale;
+      if(typeof window.applyView === 'function') window.applyView();
+      e.preventDefault();
+    }
+  }, {passive:false});
+  svgEl.addEventListener('touchend', ()=>{
+    pinchDist = null; pinchScale = null;
+  }, {passive:true});
+
+  // Tighten Wikipedia matching to avoid bad Turkish matches
+  window.wikiLookupExact = async function(name,lang){
+    if (window.unixLinks && window.unixLinks[name] && !(window.famousTurkishWiki && window.famousTurkishWiki.has(name))) return null;
+    const alias = lang==='tr' ? (window.wikiAliasTR||{})[name] : (window.wikiAliasEN||{})[name];
+    const tries = [];
+    if (alias !== undefined && alias !== null && alias !== '') tries.push(alias);
+    tries.push(name);
+    tries.push(name.replace(/İ/g,'I').replace(/ı/g,'i'));
+    tries.push(name.replace(/Ş/g,'S').replace(/ş/g,'s').replace(/Ç/g,'C').replace(/ç/g,'c').replace(/Ü/g,'U').replace(/ü/g,'u').replace(/Ö/g,'O').replace(/ö/g,'o').replace(/Ğ/g,'G').replace(/ğ/g,'g'));
+    const want = (window.normName ? window.normName(alias || name) : String(alias || name).toLowerCase());
+    for(const term of [...new Set(tries.filter(Boolean))]){
+      try{
+        const url=`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent('intitle:'+term)}&utf8=1&format=json&origin=*`;
+        const js=await fetch(url).then(r=>r.ok?r.json():null);
+        const hits=(js&&js.query&&js.query.search)||[];
+        for(const h of hits.slice(0,5)){
+          const t=h.title||'';
+          const got = window.normName ? window.normName(t) : t.toLowerCase();
+          if(got===want || got.includes(want) || want.includes(got)) return t;
+        }
+      }catch(e){}
+      try{
+        const openSearch=`https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(term)}&limit=5&namespace=0&format=json&origin=*`;
+        const arr=await fetch(openSearch).then(r=>r.ok?r.json():null);
+        const list=arr&&arr[1]||[];
+        for(const t of list){
+          const got = window.normName ? window.normName(t) : String(t).toLowerCase();
+          if(got===want || got.includes(want) || want.includes(got)) return t;
+        }
+      }catch(e){}
+    }
+    return null;
+  };
+
+  // Active tab should follow actual fallback target
+  window.setActiveTab = function(kind){
+    frameTabsEl.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.kind===kind));
+  };
+
+  window.loadTab = async function(n, kind){
+    flashTap(frameTabsEl.querySelector(`button[data-kind="${kind}"]`));
+    const L = window.nameSearchLinks(n.name);
+    if(kind==='google'){ setActiveTab('google'); infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>Google sonuçları güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.google}">Yeni sayfada aç</a></div>`); return; }
+    if(kind==='scholar'){ setActiveTab('scholar'); infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>Google Scholar sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.scholar}">Yeni sayfada aç</a></div>`); return; }
+    if(kind==='rg'){ setActiveTab('rg'); infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>ResearchGate sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.rg}">Yeni sayfada aç</a></div>`); return; }
+    if(kind==='unix'){
+      setActiveTab('unix');
+      const u = window.unixLinks ? window.unixLinks[n.name] : null;
+      if(!u){ infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>UNİS bağlantısı tanımlı değil.</p>`); return; }
+      infoFrameEl.removeAttribute('srcdoc');
+      infoFrameEl.src = u;
+      return;
+    }
+    if(kind==='trwiki'){
+      setActiveTab('trwiki');
+      infoFrameEl.removeAttribute('src');
+      infoFrameEl.srcdoc = window.frameDoc(n.name,'<p>Türkçe Wikipedia yükleniyor...</p>');
+      let doc = await window.buildWikiDoc(n.name,'tr');
+      if(doc.includes('Wikipedia sayfası bulunamadı') || doc.includes('yüklenemedi')){
+        setActiveTab('enwiki');
+        doc = await window.buildWikiDoc(n.name,'en');
+      }
+      infoFrameEl.srcdoc = doc;
+      return;
+    }
+    if(kind==='enwiki'){
+      setActiveTab('enwiki');
+      infoFrameEl.removeAttribute('src');
+      infoFrameEl.srcdoc = window.frameDoc(n.name,'<p>English Wikipedia is loading...</p>');
+      let doc = await window.buildWikiDoc(n.name,'en');
+      if(doc.includes('Wikipedia sayfası bulunamadı') || doc.includes('yüklenemedi')){
+        setActiveTab('trwiki');
+        doc = await window.buildWikiDoc(n.name,'tr');
+      }
+      infoFrameEl.srcdoc = doc;
+      return;
+    }
+  };
+
+  // Faster panel opening and immediate mobile feedback
+  window.openPanel = function(n){
+    if(!n) return;
+    if(typeof window.flashNode==='function') window.flashNode(n.id);
+    backdropEl.classList.add('open');
+    const panelEl = backdropEl.querySelector('.panel');
+    if(panelEl) panelEl.scrollTop = 0;
+    if(closeBtnEl) { closeBtnEl.scrollIntoView({block:'nearest'}); }
+    panelTitleEl.textContent = n.name;
+    panelMetaEl.textContent = n.turkish ? 'Türk matematikçi / akademisyen' : 'Matematikçi';
+    panelSummaryEl.innerHTML = '<strong>Bilgi hazırlanıyor...</strong>';
+    frameTabsEl.innerHTML = '';
+    infoFrameEl.removeAttribute('src');
+    infoFrameEl.srcdoc = window.frameDoc(n.name,'<p>Yükleniyor...</p><p>Lütfen bekleyin...</p>');
+    const L = window.nameSearchLinks(n.name);
+    const mk=(kind,label,url)=>{
+      const wrap=document.createElement('span'); wrap.className='tabgrp';
+      const b=document.createElement('button'); b.type='button'; b.textContent=label; b.dataset.kind=kind;
+      const openNow=()=>window.loadTab(n,kind);
+      b.addEventListener('click',openNow);
+      b.addEventListener('touchstart',()=>flashTap(b),{passive:true});
+      b.addEventListener('touchend',(e)=>{ e.preventDefault(); openNow(); },{passive:false});
+      const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener'; a.className='miniout'; a.textContent='↗';
+      wrap.appendChild(b); wrap.appendChild(a); frameTabsEl.appendChild(wrap);
+    };
+    mk('trwiki','Wikipedia TR',L.wikiTRSearch);
+    mk('enwiki','Wikipedia EN',L.wikiENSearch);
+    if(window.unixLinks && window.unixLinks[n.name]) mk('unix','UNİS',window.unixLinks[n.name]);
+    mk('google','Google',L.google);
+    mk('scholar','Scholar',L.scholar);
+    mk('rg','ResearchGate',L.rg);
+
+    Promise.resolve().then(()=>window.buildSummary ? window.buildSummary(n) : null).then(summary=>{
+      if(summary){
+        const s=summary.sum||{};
+        const img=s.thumbnail?.source?`<img src="${s.thumbnail.source}" alt="">`:'';
+        panelSummaryEl.innerHTML=`${img}<strong>${window.esc ? window.esc(summary.title) : summary.title}</strong>${s.description?`<br><em>${window.esc ? window.esc(s.description) : s.description}</em>`:''}<br><br>${window.esc ? window.esc(s.extract||'Özet bulunamadı.') : (s.extract||'Özet bulunamadı.')}`;
+      }else{
+        panelSummaryEl.innerHTML = (window.unixLinks && window.unixLinks[n.name]) ? 'Bu kişi için kurumsal UNİS kaydı tanımlı. En doğru bilgi için UNİS sekmesini kullanabilirsiniz.' : 'Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
+      }
+    });
+
+    const defaultTab = ((window.unixLinks && window.unixLinks[n.name]) && !(window.famousTurkishWiki && window.famousTurkishWiki.has(n.name))) ? 'unix' : 'trwiki';
+    window.loadTab(n, defaultTab);
+  };
+
+  // Immediate touch open on nodes
+  function bindFastNodeTaps(){
+    document.querySelectorAll('.node-group .node-hit').forEach(hit=>{
+      const g = hit.parentNode;
+      const id = g && g.getAttribute('data-id');
+      const n = (window.nodes||[]).find(x=>x.id===id);
+      if(!n || hit.dataset.fastbound==='1') return;
+      hit.dataset.fastbound='1';
+      hit.addEventListener('touchstart', ()=>flashTap(g), {passive:true});
+      hit.addEventListener('touchend', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        window.openPanel(n);
+      }, {passive:false});
+    });
+  }
+  bindFastNodeTaps();
+  setTimeout(bindFastNodeTaps, 300);
+
+  // Re-initialize and center tree on mobile
+  setTimeout(()=>{ try{ window.fitInitialView(); }catch(e){} }, 60);
+  setTimeout(()=>{ try{ window.fitInitialView(); }catch(e){} }, 250);
+})();
+</script>
+
+</body></html>`;
 }
 function searchHubDoc(n){
   const L=nameSearchLinks(n.name);
@@ -610,5 +869,242 @@ Tüm hakları Kafkas Üniversitesi Fen Edebiyat Fakültesi Matematik Bölümüne
   Prof. Dr. Veysel Nezir ve Noura Nezir tarafından hazırlanmıştır.<br>
   Tüm hakları Kafkas Üniversitesi Fen Edebiyat Fakültesi Matematik Bölümüne aittir.
 </div>
+
+
+<script>
+/* ---- v5 mobile/popup override ---- */
+(function(){
+  const svgEl = document.getElementById('treeSvg');
+  const viewportEl = document.getElementById('viewport');
+  const backdropEl = document.getElementById('infoBackdrop');
+  const closeBtnEl = document.getElementById('closePanel');
+  const searchEl = document.getElementById('searchBox');
+  const frameTabsEl = document.getElementById('frameTabs');
+  const infoFrameEl = document.getElementById('infoFrame');
+  const panelTitleEl = document.getElementById('panelTitle');
+  const panelMetaEl = document.getElementById('panelMeta');
+  const panelSummaryEl = document.getElementById('panelSummary');
+
+  function flashTap(el){
+    if(!el) return;
+    el.classList.add('tapflash');
+    setTimeout(()=>el.classList.remove('tapflash'), 220);
+  }
+
+  // Make button taps feel immediate on mobile
+  document.querySelectorAll('.toolbar button').forEach(btn=>{
+    btn.addEventListener('touchstart', ()=>flashTap(btn), {passive:true});
+  });
+
+  // Better initial mobile fit: Thales near top-center and tree visible
+  window.fitInitialView = function(){
+    const card = svgEl.closest('.card');
+    const W = card ? card.clientWidth : (svgEl.clientWidth || 1200);
+    const H = card ? card.clientHeight || window.innerHeight*0.72 : window.innerHeight*0.72;
+    const isMobile = window.innerWidth <= 700;
+    const th = (window.nodes||[]).find(n=>n.name==='Thales') || (window.nodes||[])[0];
+    if(!th) return;
+    let targetScale;
+    if(isMobile){
+      targetScale = Math.max(0.48, Math.min(0.72, (W-24) / 900));
+    }else{
+      targetScale = Math.max(0.55, Math.min(1.0, (W-120) / 1300));
+    }
+    window.currentScale = targetScale;
+    const cx = th.x + th.w/2;
+    const cy = th.y + th.h/2;
+    window.panX = W/2 - cx*window.currentScale;
+    window.panY = (isMobile ? 110 : 95) - cy*window.currentScale;
+    if(typeof window.applyView === 'function') window.applyView();
+  };
+
+  // Pinch zoom for mobile
+  let pinchDist = null, pinchScale = null;
+  function touchDistance(t1,t2){
+    const dx=t1.clientX-t2.clientX, dy=t1.clientY-t2.clientY;
+    return Math.hypot(dx,dy);
+  }
+  function touchCenter(t1,t2){
+    return {x:(t1.clientX+t2.clientX)/2, y:(t1.clientY+t2.clientY)/2};
+  }
+  function svgPoint(clientX, clientY){
+    const pt = svgEl.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    return pt.matrixTransform(svgEl.getScreenCTM().inverse());
+  }
+  svgEl.addEventListener('touchstart', (e)=>{
+    if(e.touches.length===2){
+      pinchDist = touchDistance(e.touches[0], e.touches[1]);
+      pinchScale = window.currentScale || 1;
+    }
+  }, {passive:true});
+  svgEl.addEventListener('touchmove', (e)=>{
+    if(e.touches.length===2 && pinchDist){
+      const d = touchDistance(e.touches[0], e.touches[1]);
+      const ratio = d / pinchDist;
+      const c = touchCenter(e.touches[0], e.touches[1]);
+      const p = svgPoint(c.x, c.y);
+      const oldScale = window.currentScale || 1;
+      const newScale = Math.max(0.22, Math.min(6, pinchScale * ratio));
+      window.currentScale = newScale;
+      window.panX = c.x - p.x * newScale;
+      window.panY = c.y - p.y * newScale;
+      if(typeof window.applyView === 'function') window.applyView();
+      e.preventDefault();
+    }
+  }, {passive:false});
+  svgEl.addEventListener('touchend', ()=>{
+    pinchDist = null; pinchScale = null;
+  }, {passive:true});
+
+  // Tighten Wikipedia matching to avoid bad Turkish matches
+  window.wikiLookupExact = async function(name,lang){
+    if (window.unixLinks && window.unixLinks[name] && !(window.famousTurkishWiki && window.famousTurkishWiki.has(name))) return null;
+    const alias = lang==='tr' ? (window.wikiAliasTR||{})[name] : (window.wikiAliasEN||{})[name];
+    const tries = [];
+    if (alias !== undefined && alias !== null && alias !== '') tries.push(alias);
+    tries.push(name);
+    tries.push(name.replace(/İ/g,'I').replace(/ı/g,'i'));
+    tries.push(name.replace(/Ş/g,'S').replace(/ş/g,'s').replace(/Ç/g,'C').replace(/ç/g,'c').replace(/Ü/g,'U').replace(/ü/g,'u').replace(/Ö/g,'O').replace(/ö/g,'o').replace(/Ğ/g,'G').replace(/ğ/g,'g'));
+    const want = (window.normName ? window.normName(alias || name) : String(alias || name).toLowerCase());
+    for(const term of [...new Set(tries.filter(Boolean))]){
+      try{
+        const url=`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent('intitle:'+term)}&utf8=1&format=json&origin=*`;
+        const js=await fetch(url).then(r=>r.ok?r.json():null);
+        const hits=(js&&js.query&&js.query.search)||[];
+        for(const h of hits.slice(0,5)){
+          const t=h.title||'';
+          const got = window.normName ? window.normName(t) : t.toLowerCase();
+          if(got===want || got.includes(want) || want.includes(got)) return t;
+        }
+      }catch(e){}
+      try{
+        const openSearch=`https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(term)}&limit=5&namespace=0&format=json&origin=*`;
+        const arr=await fetch(openSearch).then(r=>r.ok?r.json():null);
+        const list=arr&&arr[1]||[];
+        for(const t of list){
+          const got = window.normName ? window.normName(t) : String(t).toLowerCase();
+          if(got===want || got.includes(want) || want.includes(got)) return t;
+        }
+      }catch(e){}
+    }
+    return null;
+  };
+
+  // Active tab should follow actual fallback target
+  window.setActiveTab = function(kind){
+    frameTabsEl.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.kind===kind));
+  };
+
+  window.loadTab = async function(n, kind){
+    flashTap(frameTabsEl.querySelector(`button[data-kind="${kind}"]`));
+    const L = window.nameSearchLinks(n.name);
+    if(kind==='google'){ setActiveTab('google'); infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>Google sonuçları güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.google}">Yeni sayfada aç</a></div>`); return; }
+    if(kind==='scholar'){ setActiveTab('scholar'); infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>Google Scholar sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.scholar}">Yeni sayfada aç</a></div>`); return; }
+    if(kind==='rg'){ setActiveTab('rg'); infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>ResearchGate sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.</p><div class="btns"><a href="${L.rg}">Yeni sayfada aç</a></div>`); return; }
+    if(kind==='unix'){
+      setActiveTab('unix');
+      const u = window.unixLinks ? window.unixLinks[n.name] : null;
+      if(!u){ infoFrameEl.removeAttribute('src'); infoFrameEl.srcdoc=window.frameDoc(n.name,`<p>UNİS bağlantısı tanımlı değil.</p>`); return; }
+      infoFrameEl.removeAttribute('srcdoc');
+      infoFrameEl.src = u;
+      return;
+    }
+    if(kind==='trwiki'){
+      setActiveTab('trwiki');
+      infoFrameEl.removeAttribute('src');
+      infoFrameEl.srcdoc = window.frameDoc(n.name,'<p>Türkçe Wikipedia yükleniyor...</p>');
+      let doc = await window.buildWikiDoc(n.name,'tr');
+      if(doc.includes('Wikipedia sayfası bulunamadı') || doc.includes('yüklenemedi')){
+        setActiveTab('enwiki');
+        doc = await window.buildWikiDoc(n.name,'en');
+      }
+      infoFrameEl.srcdoc = doc;
+      return;
+    }
+    if(kind==='enwiki'){
+      setActiveTab('enwiki');
+      infoFrameEl.removeAttribute('src');
+      infoFrameEl.srcdoc = window.frameDoc(n.name,'<p>English Wikipedia is loading...</p>');
+      let doc = await window.buildWikiDoc(n.name,'en');
+      if(doc.includes('Wikipedia sayfası bulunamadı') || doc.includes('yüklenemedi')){
+        setActiveTab('trwiki');
+        doc = await window.buildWikiDoc(n.name,'tr');
+      }
+      infoFrameEl.srcdoc = doc;
+      return;
+    }
+  };
+
+  // Faster panel opening and immediate mobile feedback
+  window.openPanel = function(n){
+    if(!n) return;
+    if(typeof window.flashNode==='function') window.flashNode(n.id);
+    backdropEl.classList.add('open');
+    const panelEl = backdropEl.querySelector('.panel');
+    if(panelEl) panelEl.scrollTop = 0;
+    if(closeBtnEl) { closeBtnEl.scrollIntoView({block:'nearest'}); }
+    panelTitleEl.textContent = n.name;
+    panelMetaEl.textContent = n.turkish ? 'Türk matematikçi / akademisyen' : 'Matematikçi';
+    panelSummaryEl.innerHTML = '<strong>Bilgi hazırlanıyor...</strong>';
+    frameTabsEl.innerHTML = '';
+    infoFrameEl.removeAttribute('src');
+    infoFrameEl.srcdoc = window.frameDoc(n.name,'<p>Yükleniyor...</p><p>Lütfen bekleyin...</p>');
+    const L = window.nameSearchLinks(n.name);
+    const mk=(kind,label,url)=>{
+      const wrap=document.createElement('span'); wrap.className='tabgrp';
+      const b=document.createElement('button'); b.type='button'; b.textContent=label; b.dataset.kind=kind;
+      const openNow=()=>window.loadTab(n,kind);
+      b.addEventListener('click',openNow);
+      b.addEventListener('touchstart',()=>flashTap(b),{passive:true});
+      b.addEventListener('touchend',(e)=>{ e.preventDefault(); openNow(); },{passive:false});
+      const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener'; a.className='miniout'; a.textContent='↗';
+      wrap.appendChild(b); wrap.appendChild(a); frameTabsEl.appendChild(wrap);
+    };
+    mk('trwiki','Wikipedia TR',L.wikiTRSearch);
+    mk('enwiki','Wikipedia EN',L.wikiENSearch);
+    if(window.unixLinks && window.unixLinks[n.name]) mk('unix','UNİS',window.unixLinks[n.name]);
+    mk('google','Google',L.google);
+    mk('scholar','Scholar',L.scholar);
+    mk('rg','ResearchGate',L.rg);
+
+    Promise.resolve().then(()=>window.buildSummary ? window.buildSummary(n) : null).then(summary=>{
+      if(summary){
+        const s=summary.sum||{};
+        const img=s.thumbnail?.source?`<img src="${s.thumbnail.source}" alt="">`:'';
+        panelSummaryEl.innerHTML=`${img}<strong>${window.esc ? window.esc(summary.title) : summary.title}</strong>${s.description?`<br><em>${window.esc ? window.esc(s.description) : s.description}</em>`:''}<br><br>${window.esc ? window.esc(s.extract||'Özet bulunamadı.') : (s.extract||'Özet bulunamadı.')}`;
+      }else{
+        panelSummaryEl.innerHTML = (window.unixLinks && window.unixLinks[n.name]) ? 'Bu kişi için kurumsal UNİS kaydı tanımlı. En doğru bilgi için UNİS sekmesini kullanabilirsiniz.' : 'Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
+      }
+    });
+
+    const defaultTab = ((window.unixLinks && window.unixLinks[n.name]) && !(window.famousTurkishWiki && window.famousTurkishWiki.has(n.name))) ? 'unix' : 'trwiki';
+    window.loadTab(n, defaultTab);
+  };
+
+  // Immediate touch open on nodes
+  function bindFastNodeTaps(){
+    document.querySelectorAll('.node-group .node-hit').forEach(hit=>{
+      const g = hit.parentNode;
+      const id = g && g.getAttribute('data-id');
+      const n = (window.nodes||[]).find(x=>x.id===id);
+      if(!n || hit.dataset.fastbound==='1') return;
+      hit.dataset.fastbound='1';
+      hit.addEventListener('touchstart', ()=>flashTap(g), {passive:true});
+      hit.addEventListener('touchend', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        window.openPanel(n);
+      }, {passive:false});
+    });
+  }
+  bindFastNodeTaps();
+  setTimeout(bindFastNodeTaps, 300);
+
+  // Re-initialize and center tree on mobile
+  setTimeout(()=>{ try{ window.fitInitialView(); }catch(e){} }, 60);
+  setTimeout(()=>{ try{ window.fitInitialView(); }catch(e){} }, 250);
+})();
+</script>
 
 </body></html>
