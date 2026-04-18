@@ -15,7 +15,7 @@ svg{display:block;width:100%;height:auto;min-width:1500px;background:#fff;touch-
 .node-box{fill:#fff;stroke:#3f5e9c;stroke-width:1.5} .node-box.tr{stroke:#b22222}
 .node-name{font:bold 11px Arial,sans-serif;text-anchor:middle;fill:#111;dominant-baseline:middle;pointer-events:none} .node-name.tr{fill:#8B1111}
 .node-hit{fill:transparent;cursor:pointer}
-.highlight .node-box{stroke:#244a8d;stroke-width:3}
+.highlight .node-box{stroke:#244a8d;stroke-width:3}.searchhit .node-box{fill:#ffef86;stroke:#c62828;stroke-width:3}.searchhit .node-name{fill:#7a1111}.blink .node-box{animation:blinkBox .9s linear 3}@keyframes blinkBox{0%,100%{fill:#ffef86;stroke:#c62828}50%{fill:#fff7bf;stroke:#ff5252}}
 .panel-backdrop{display:none;position:fixed;inset:0;background:rgba(10,16,28,.56);z-index:50;padding:16px} .panel-backdrop.open{display:flex;align-items:center;justify-content:center}
 .panel{position:relative;width:min(1100px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;padding:18px;border:1px solid var(--soft);box-shadow:0 28px 70px rgba(0,0,0,.22)}
 .close{position:absolute;right:12px;top:12px;width:40px;height:40px;line-height:38px;text-align:center;border:none;border-radius:999px;background:#edf4ff;color:#244a8d;font-size:28px;cursor:pointer}
@@ -25,9 +25,22 @@ svg{display:block;width:100%;height:auto;min-width:1500px;background:#fff;touch-
 .framewrap{margin-top:12px;border:1px solid var(--soft);border-radius:14px;overflow:hidden;background:#fff}
 .framebar{display:flex;gap:6px;flex-wrap:wrap;padding:10px;border-bottom:1px solid var(--soft);background:#fbfdff;align-items:center}
 .framebar .tabgrp{display:inline-flex;gap:4px;align-items:center}
-.framebar button{padding:8px 12px;border-radius:10px;border:1px solid var(--soft);background:#fff;color:#244a8d;cursor:pointer;font-weight:700;font:inherit}
-.framebar button.active{background:#eaf2ff;border-color:#8fb2e8}
-.framebar a.miniout{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;border:1px solid var(--soft);text-decoration:none;color:#244a8d;background:#fff;font-weight:700}
+.framebar button{padding:8px 12px;border-radius:10px;border:1px solid var(--soft);background:#fff;color:#244a8d;cursor:pointer;font-weight:700;font:inherit;transition:.18s}
+.framebar button.active{color:#fff}
+.framebar button[data-kind="trwiki"]{border-color:#7aa6ff;color:#1d4fa3}
+.framebar button[data-kind="trwiki"].active{background:#2f6fdf;border-color:#2f6fdf}
+.framebar button[data-kind="enwiki"]{border-color:#9a8cf2;color:#4e3fb3}
+.framebar button[data-kind="enwiki"].active{background:#6e5ae0;border-color:#6e5ae0}
+.framebar button[data-kind="unix"]{border-color:#36a38a;color:#0b6e5c}
+.framebar button[data-kind="unix"].active{background:#0f8a73;border-color:#0f8a73}
+.framebar button[data-kind="google"]{border-color:#f2b36b;color:#a05b00}
+.framebar button[data-kind="google"].active{background:#ef9b32;border-color:#ef9b32}
+.framebar button[data-kind="scholar"]{border-color:#65b38b;color:#16643b}
+.framebar button[data-kind="scholar"].active{background:#2f915a;border-color:#2f915a}
+.framebar button[data-kind="rg"]{border-color:#c08ad9;color:#6f2f8e}
+.framebar button[data-kind="rg"].active{background:#9340b7;border-color:#9340b7}
+.framebar a.miniout{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;border:1px solid var(--soft);text-decoration:none;color:#244a8d;background:#fff;font-weight:700;transition:.18s}
+.framebar .tabgrp:hover a.miniout{background:#eef4ff}
 #infoFrame{width:100%;height:58vh;border:0;background:#fff}
 
 .note2{font-size:13px;color:var(--muted);margin-top:8px}
@@ -106,6 +119,35 @@ const byId=Object.fromEntries(nodes.map(n=>[n.id,n]));
 const edgesByNode={}; edges.forEach(e=>{(edgesByNode[e.source]??=[]).push(e); (edgesByNode[e.target]??=[]).push(e);});
 let currentScale=1, panX=0, panY=0;
 function applyView(){viewport.setAttribute('transform',`translate(${panX},${panY}) scale(${currentScale})`);}
+
+function focusNodeOnScreen(n, scale=currentScale, yPad=90){
+  const card = svg.closest('.card');
+  const W = card ? card.clientWidth : svg.clientWidth || 1200;
+  const H = window.innerHeight ? Math.max(300, window.innerHeight - 220) : 700;
+  const cx = n.x + n.w/2;
+  const cy = n.y + n.h/2;
+  const targetX = W/2;
+  const targetY = yPad;
+  currentScale = scale;
+  panX = targetX/currentScale - cx;
+  panY = targetY/currentScale - cy;
+  applyView();
+}
+function fitInitialView(){
+  const card = svg.closest('.card');
+  const W = card ? card.clientWidth : svg.clientWidth || 1200;
+  const topSpan = 1200; // show upper region instead of blank far left/right
+  const fitScale = Math.max(0.32, Math.min(1.0, (W-40)/topSpan));
+  const thales = nodes.find(n=>n.name==='Thales') || nodes[0];
+  focusNodeOnScreen(thales, fitScale, 80);
+}
+function blinkAndFocus(n){
+  nodes.forEach(x=>x._g?.classList.remove('searchhit','blink'));
+  if(!n || !n._g) return;
+  n._g.classList.add('searchhit','blink');
+  focusNodeOnScreen(n, Math.max(currentScale, 0.75), 120);
+  setTimeout(()=>n._g && n._g.classList.remove('blink'), 3200);
+}
 function createEl(tag,attrs={},text=''){const el=document.createElementNS('http://www.w3.org/2000/svg',tag); for(const[k,v] of Object.entries(attrs)) el.setAttribute(k,v); if(text) el.textContent=text; return el;}
 function nameSearchLinks(name){const q=encodeURIComponent(name+' matematik'); return {
   google:`https://www.google.com/search?q=${q}`,
@@ -312,15 +354,14 @@ async function wikiParseHtml(title,lang){
 }
 function frameDoc(title,body){
   return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><base target="_blank"><style>
-  body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;color:#1f2a44;line-height:1.6;background:#fff}
+  body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:16px;color:#1f2a44;line-height:1.6;background:#fff}
   img{max-width:240px;height:auto;border-radius:10px;display:block;margin:0 0 12px 0}
-  .top{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d7e2f1}
   a{color:#2f5aa8;text-decoration:none}
   .btns a{display:inline-block;margin:6px 8px 0 0;padding:8px 10px;border:1px solid #d7e2f1;border-radius:10px;background:#eef4ff}
   table.infobox{float:right;margin:0 0 12px 18px;max-width:320px;font-size:14px}
   .mw-parser-output{font-size:15px}
   .mw-editsection,.reference,.reflist,.navbox,.metadata,.toc,.shortdescription,.hatnote,.sidebar,.ambox,.plainlinks{display:none!important}
-  </style></head><body><div class="top"><h1 style="margin:0;font-size:18px">${esc(title)}</h1></div>${body}</body></html>`;
+  </style></head><body>${body}</body></html>`;
 }
 function searchHubDoc(n){
   const L=nameSearchLinks(n.name);
@@ -396,7 +437,7 @@ async function openPanel(n){
   backdrop.classList.add('open');
   panelTitle.textContent=n.name;
   panelMeta.textContent=n.turkish?'Türk matematikçi / akademisyen':'Matematikçi';
-  panelSummary.textContent='Bilgi yükleniyor...';
+  panelSummary.innerHTML='<strong>Bilgi hazırlanıyor...</strong>'; 
   panelLinks.innerHTML='';
   frameTabs.innerHTML='';
   infoFrame.removeAttribute('src');
@@ -409,7 +450,7 @@ async function openPanel(n){
   mk('google','Google',L.google);
   mk('scholar','Scholar',L.scholar);
   mk('rg','ResearchGate',L.rg);
-  buildSummary(n).then(summary=>{
+  setTimeout(()=>buildSummary(n).then(summary=>{
     if(summary){
       const s=summary.sum;
       const img=s.thumbnail?.source?`<img src="${s.thumbnail.source}" alt="">`:'';
@@ -417,11 +458,27 @@ async function openPanel(n){
     }else{
       panelSummary.innerHTML='Bu isim için hızlı özet bulunamadı. Wikipedia TR ve EN sekmelerini deneyebilirsiniz.';
     }
-  });
+  }), 10);
   loadTab(n,'trwiki');
 }
 document.getElementById('closePanel').addEventListener('click',()=>backdrop.classList.remove('open')); backdrop.addEventListener('click',(e)=>{if(e.target===backdrop) backdrop.classList.remove('open');});
-searchBox.addEventListener('input',()=>{const q=searchBox.value.toLowerCase().trim(); nodes.forEach(n=>n._g?.classList.toggle('highlight',!!q && n.name.toLowerCase().includes(q)));});
+searchBox.addEventListener('input',()=>{
+  const q=searchBox.value.toLowerCase().trim();
+  let first=null;
+  nodes.forEach(n=>{
+    const hit=!!q && n.name.toLowerCase().includes(q);
+    n._g?.classList.toggle('highlight',hit);
+    if(hit && !first) first=n;
+  });
+  if(first) blinkAndFocus(first);
+});
+searchBox.addEventListener('keydown',(e)=>{
+  if(e.key==='Enter'){
+    const q=searchBox.value.toLowerCase().trim();
+    const first=nodes.find(n=>n.name.toLowerCase().includes(q));
+    if(first){ blinkAndFocus(first); openPanel(first); }
+  }
+});
 // pan + zoom
 let panning=false, panStart=null;
 const getSvgPt=(evt)=>{const pt=svg.createSVGPoint(); const s=evt.touches?evt.touches[0]:evt; pt.x=s.clientX; pt.y=s.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse());};
@@ -434,10 +491,10 @@ window.addEventListener('touchend',()=>panning=false);
 svg.addEventListener('wheel',(e)=>{e.preventDefault(); const factor=e.deltaY<0?1.12:1/1.12; currentScale=Math.max(0.25,Math.min(6,currentScale*factor)); applyView();},{passive:false});
 document.getElementById('zoomInBtn').addEventListener('click',()=>{currentScale=Math.min(6,currentScale*1.15); applyView();});
 document.getElementById('zoomOutBtn').addEventListener('click',()=>{currentScale=Math.max(0.25,currentScale/1.15); applyView();});
-document.getElementById('fitBtn').addEventListener('click',()=>{currentScale=1; panX=0; panY=0; applyView();});
-document.getElementById('resetBtn').addEventListener('click',()=>{localStorage.removeItem('soyagaci_layout_v2'); currentScale=1; panX=0; panY=0; location.reload();});
+document.getElementById('fitBtn').addEventListener('click',()=>{fitInitialView();});
+document.getElementById('resetBtn').addEventListener('click',()=>{localStorage.removeItem('soyagaci_layout_v2'); fitInitialView();});
 const saved=localStorage.getItem('soyagaci_layout_v2'); if(saved){try{JSON.parse(saved).forEach(([id,x,y])=>{if(byId[id]){byId[id].x=x; byId[id].y=y;}});}catch(e){}}
-render();
+render(); fitInitialView(); window.addEventListener('resize',()=>{ if(!backdrop.classList.contains('open')) fitInitialView(); });
 </script>
 <div style="position:fixed;right:15px;bottom:10px;font-size:13px;background:rgba(255,255,255,0.9);
 padding:6px 10px;border-radius:6px;font-family:Arial,Helvetica,sans-serif;">
