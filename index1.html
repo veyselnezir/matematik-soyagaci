@@ -16,7 +16,7 @@ body{overflow:hidden}
 .header{padding:8px 12px 6px; background:#f6f8fb; border-bottom:1px solid #ccd5e6;}
 .header h1{margin:0; font-size:18px; line-height:1.25}
 .header p{margin:2px 0 0; font-size:11px; color:var(--muted); line-height:1.3}
-.toolbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:8px 12px; background:#f6f8fb; border-bottom:1px solid #e0e6f2;}
+.toolbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:6px 10px; background:#f6f8fb; border-bottom:1px solid #e0e6f2;}
 .toolbar input{flex:1 1 180px; min-width:150px; border:1px solid var(--soft); border-radius:10px; padding:10px 12px; font-size:15px;}
 .toolbar button{border:1px solid var(--soft); background:#fff; color:var(--text); border-radius:10px; padding:10px 10px; font-size:14px; line-height:1; min-width:44px;}
 .main{flex:1; min-height:0; overflow:hidden; position:relative;}
@@ -41,6 +41,15 @@ body{overflow:hidden}
 .panelBody{flex:1; min-height:0; padding:8px; background:#fff;}
 #infoFrame{width:100%; height:100%; border:1px solid #e1e6f2; border-radius:12px; background:#fff;}
 .footer{padding:6px 10px 8px; font-size:10px; color:#6a7893; text-align:right; background:#f6f8fb; border-top:1px solid #dde4f0;}
+
+.summaryCard{border:1px solid #e3e8f3;border-radius:14px;padding:12px;background:#fafcff;line-height:1.55}
+.summaryCard img{max-width:96px;max-height:96px;float:right;margin-left:10px;border-radius:10px}
+.wikiContent{font-size:14px;line-height:1.6}
+.wikiContent img,.wikiContent table,.wikiContent .mw-editsection,.wikiContent .reference,.wikiContent .shortdescription,.wikiContent .hatnote,.wikiContent .navbox,.wikiContent .metadata,.wikiContent .thumbcaption,.wikiContent .mw-empty-elt{display:none !important}
+.wikiContent a{color:#1d4b91;text-decoration:none}
+.miniPair{display:inline-flex;gap:4px;align-items:center}
+.miniPair .openTiny{font-size:11px;padding:7px 7px;min-width:auto}
+
 @media (max-width: 900px){
   .header h1{font-size:16px}
   .toolbar{padding:6px 8px; gap:5px;}
@@ -56,7 +65,7 @@ body{overflow:hidden}
 <div class="app">
   <div class="header">
     <h1>Matematik Soyağacı</h1>
-    <p>İsme dokununca bilgi penceresi açılır. Mobilde iki parmakla yakınlaştırma, masaüstünde tekerlekle zoom ve sürükleyerek gezinme desteklenir.</p>
+    <p>İsme dokununca bilgi penceresi açılır.</p>
   </div>
   <div class="toolbar">
     <input id="searchBox" type="search" placeholder="İsim ara..." enterkeyhint="search">
