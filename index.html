@@ -7,58 +7,63 @@
 <style>
 :root {
   --bg:#f4f6fb; --card:#fff; --soft:#d7e2f1; --text:#1f2a44; --muted:#5f6f8f;
-  --panelW:min(420px, 100vw); --toolbarH:auto;
+  --accent:#b30000; --yellow:#ffef70;
 }
 *{box-sizing:border-box}
 html,body{margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:Arial,Helvetica,sans-serif;}
 body{overflow:hidden}
 .app{display:flex; flex-direction:column; height:100svh;}
-.header{padding:10px 12px 8px; background:#f6f8fb; border-bottom:1px solid #ccd5e6;}
-.header h1{margin:0 0 4px; font-size:20px;}
-.header p{margin:0; font-size:12px; color:var(--muted); line-height:1.35}
-.toolbar{display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 12px; background:#f6f8fb; border-bottom:1px solid #e0e6f2;}
-.toolbar input{grid-column:1/-1; border:1px solid var(--soft); border-radius:12px; padding:12px 14px; font-size:16px; width:100%;}
-.toolbar button{border:1px solid var(--soft); background:#fff; color:var(--text); border-radius:12px; padding:12px 10px; font-size:16px;}
-.main{flex:1; min-height:0; display:flex; overflow:hidden;}
-.canvasWrap{flex:1; min-width:0; min-height:0; position:relative; overflow:hidden; background:#eef2f8; touch-action:none;}
+.header{padding:8px 12px 6px; background:#f6f8fb; border-bottom:1px solid #ccd5e6;}
+.header h1{margin:0; font-size:18px; line-height:1.25}
+.header p{margin:2px 0 0; font-size:11px; color:var(--muted); line-height:1.3}
+.toolbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:8px 12px; background:#f6f8fb; border-bottom:1px solid #e0e6f2;}
+.toolbar input{flex:1 1 180px; min-width:150px; border:1px solid var(--soft); border-radius:10px; padding:10px 12px; font-size:15px;}
+.toolbar button{border:1px solid var(--soft); background:#fff; color:var(--text); border-radius:10px; padding:10px 10px; font-size:14px; line-height:1; min-width:44px;}
+.main{flex:1; min-height:0; overflow:hidden; position:relative;}
+.canvasWrap{width:100%; height:100%; position:relative; overflow:hidden; background:#eef2f8; touch-action:none;}
 #svgHost{width:100%; height:100%;}
 #treeSvg{width:100%; height:100%; display:block; user-select:none; -webkit-user-select:none;}
 .node{cursor:pointer}
-.node rect, .node text{transition:all .25s ease}
-.node.highlight rect{fill:#ffef70 !important; stroke:#d40000 !important; stroke-width:4 !important}
-.node.highlight text{fill:#7a0000 !important}
+.node rect,.node text{transition:all .25s ease}
+.node.highlight rect{fill:var(--yellow)!important; stroke:var(--accent)!important; stroke-width:4!important}
+.node.highlight text{fill:#7a0000!important}
 .node.blink rect{animation:blink .6s linear 6}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
-.panel{width:min(430px, 100vw); background:#fff; border-left:1px solid #d8e0ee; display:flex; flex-direction:column; min-height:0;}
-.panelHeader{padding:10px 12px; border-bottom:1px solid #e2e8f3; display:flex; justify-content:space-between; gap:8px; align-items:center;}
-.panelTitle{font-weight:700; font-size:15px; line-height:1.3}
+.modal{position:fixed; inset:0; background:rgba(16,26,45,.28); display:none; align-items:flex-end; justify-content:flex-end; z-index:9999;}
+.modal.open{display:flex}
+.panel{width:min(460px, calc(100vw - 16px)); height:min(78svh, 760px); margin:8px; background:#fff; border:1px solid #d8e0ee; border-radius:16px; box-shadow:0 18px 40px rgba(23,35,61,.18); display:flex; flex-direction:column; overflow:hidden;}
+.panelHeader{padding:10px 12px; border-bottom:1px solid #e2e8f3; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.panelTitle{font-weight:700; font-size:15px; line-height:1.25; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.panelActions{display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:8px 12px; border-bottom:1px solid #eef2f7; background:#fafcff;}
+.panelActions button,.miniLink{border:1px solid var(--soft); background:#fff; color:#1d4b91; border-radius:10px; padding:7px 8px; font-size:12px; text-decoration:none;}
+.miniOpen{padding:7px 8px; min-width:unset; font-size:12px}
 .panelClose{border:1px solid var(--soft); background:#fff; border-radius:10px; padding:6px 10px;}
-.panelBody{padding:12px; overflow:auto; font-size:14px; line-height:1.5}
-.links{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0}
-.links a{border:1px solid var(--soft); background:#f8fbff; color:#1d4b91; border-radius:10px; padding:8px 10px; text-decoration:none; font-size:13px}
-.summaryCard{border:1px solid #e3e8f3; border-radius:14px; padding:12px; background:#fafcff}
-.summaryCard img{max-width:96px; max-height:96px; float:right; margin-left:10px; border-radius:10px}
-.footer{padding:8px 12px 10px; font-size:11px; color:#6a7893; text-align:right; background:#f6f8fb; border-top:1px solid #dde4f0}
-.badge{display:inline-block; font-size:12px; border-radius:999px; padding:2px 8px; background:#eef3fb; color:#3d5a91; margin-left:6px}
-@media (max-width: 900px) {
-  .main{flex-direction:column;}
-  .panel{width:100%; height:42svh; border-left:none; border-top:1px solid #d8e0ee;}
-  .header h1{font-size:18px}
+.panelBody{flex:1; min-height:0; padding:8px; background:#fff;}
+#infoFrame{width:100%; height:100%; border:1px solid #e1e6f2; border-radius:12px; background:#fff;}
+.footer{padding:6px 10px 8px; font-size:10px; color:#6a7893; text-align:right; background:#f6f8fb; border-top:1px solid #dde4f0;}
+@media (max-width: 900px){
+  .header h1{font-size:16px}
+  .toolbar{padding:6px 8px; gap:5px;}
+  .toolbar input{flex:1 1 100%; font-size:15px; padding:10px 12px;}
+  .toolbar button{padding:9px 9px; font-size:13px;}
+  .modal{align-items:flex-end; justify-content:center;}
+  .panel{width:100vw; height:72svh; margin:0; border-radius:16px 16px 0 0;}
+  .panelActions{overflow-x:auto; white-space:nowrap;}
 }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <h1>Matematik Soyağacı <span class="badge">Tek dosya, mobil uyumlu</span></h1>
-    <p>Grafiği parmakla veya fareyle sürükleyebilirsiniz. Mobilde iki parmakla yakınlaştırma, masaüstünde tekerlekle zoom desteklenir. İsme tıklayınca bilgi paneli açılır.</p>
+    <h1>Matematik Soyağacı</h1>
+    <p>İsme dokununca bilgi penceresi açılır. Mobilde iki parmakla yakınlaştırma, masaüstünde tekerlekle zoom ve sürükleyerek gezinme desteklenir.</p>
   </div>
   <div class="toolbar">
     <input id="searchBox" type="search" placeholder="İsim ara..." enterkeyhint="search">
-    <button id="fitBtn">Sığdır</button>
-    <button id="resetBtn">Yerleri sıfırla</button>
-    <button id="zoomInBtn">Yakınlaştır</button>
-    <button id="zoomOutBtn">Uzaklaştır</button>
+    <button id="fitBtn" title="Sığdır">⌂</button>
+    <button id="zoomOutBtn" title="Uzaklaştır">−</button>
+    <button id="zoomInBtn" title="Yakınlaştır">+</button>
+    <button id="resetBtn" title="Sıfırla">↺</button>
   </div>
   <div class="main">
     <div class="canvasWrap" id="canvasWrap">
@@ -1504,34 +1509,34 @@ body{overflow:hidden}
 </g>
 </svg></div>
     </div>
-    <aside class="panel" id="infoPanel">
-      <div class="panelHeader">
-        <div class="panelTitle" id="panelTitle">Bilgi paneli</div>
-        <button class="panelClose" id="panelClose">Kapat</button>
-      </div>
-      <div class="panelBody">
-        <div id="summaryBox" class="summaryCard">Bir isme tıklayınca burada bilgi görünecek.</div>
-        <div class="links" id="linkBox"></div>
-        <iframe id="infoFrame" title="Bilgi çerçevesi" style="width:100%;height:44vh;border:1px solid #e1e6f2;border-radius:12px;background:#fff;" loading="lazy"></iframe>
-      </div>
-    </aside>
   </div>
   <div class="footer">Prof. Dr. Veysel Nezir ve Noura Nezir tarafından hazırlanmıştır.<br>Tüm hakları Kafkas Üniversitesi Fen Edebiyat Fakültesi Matematik Bölümüne aittir.</div>
 </div>
-
+<div class="modal" id="infoModal" aria-hidden="true">
+  <aside class="panel" id="infoPanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+    <div class="panelHeader">
+      <div class="panelTitle" id="panelTitle">Bilgi paneli</div>
+      <button class="panelClose" id="panelClose">Kapat</button>
+    </div>
+    <div class="panelActions" id="panelActions"></div>
+    <div class="panelBody">
+      <iframe id="infoFrame" title="Bilgi çerçevesi" loading="lazy"></iframe>
+    </div>
+  </aside>
+</div>
 <script>
 (() => {
   const svg = document.getElementById('treeSvg');
   const wrap = document.getElementById('canvasWrap');
-  const panelTitle = document.getElementById('panelTitle');
-  const summaryBox = document.getElementById('summaryBox');
-  const linkBox = document.getElementById('linkBox');
-  const infoFrame = document.getElementById('infoFrame');
   const searchBox = document.getElementById('searchBox');
   const fitBtn = document.getElementById('fitBtn');
   const resetBtn = document.getElementById('resetBtn');
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const modal = document.getElementById('infoModal');
+  const panelTitle = document.getElementById('panelTitle');
+  const panelActions = document.getElementById('panelActions');
+  const infoFrame = document.getElementById('infoFrame');
   const panelClose = document.getElementById('panelClose');
 
   const baseBox = {x:0, y:0, w:2708.1, h:4899.6};
@@ -1542,55 +1547,48 @@ body{overflow:hidden}
   nodes.forEach(n => {
     n.addEventListener('click', (e) => {
       e.preventDefault();
-      const name = n.dataset.name || n.textContent.trim();
-      openInfo(name, n.dataset.wikitr, n.dataset.wikien, n.dataset.google);
+      e.stopPropagation();
+      const links = getLinks(n);
+      openInfo(links.name, links);
       highlightNode(n);
     });
   });
 
-  function setViewBox() {
-    svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+  function getLinks(n) {
+    const name = n.dataset.name || n.textContent.trim();
+    return {
+      name,
+      wikitr: n.dataset.wikitr || '',
+      wikien: n.dataset.wikien || '',
+      google: n.dataset.google || ('https://www.google.com/search?q=' + encodeURIComponent(name)),
+      scholar: 'https://scholar.google.com/scholar?q=' + encodeURIComponent(name),
+      researchgate: 'https://www.researchgate.net/search?q=' + encodeURIComponent(name)
+    };
   }
 
-  function fit() {
-    const pad = 20;
-    view = {x:0-pad, y:0-pad, w:baseBox.w+pad*2, h:baseBox.h+pad*2};
-    setViewBox();
-  }
-
-  function reset() {
-    fit();
-  }
-
+  function setViewBox() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }
+  function fit() { const pad=20; view={x:-pad,y:-pad,w:baseBox.w+pad*2,h:baseBox.h+pad*2}; setViewBox(); }
+  function reset() { fit(); }
   function zoom(factor, cx, cy) {
-    const mx = cx ?? (view.x + view.w/2);
-    const my = cy ?? (view.y + view.h/2);
-    const newW = view.w / factor;
-    const newH = view.h / factor;
-    view.x = mx - (mx - view.x)/factor;
-    view.y = my - (my - view.y)/factor;
-    view.w = newW;
-    view.h = newH;
-    setViewBox();
+    const mx = cx ?? (view.x + view.w/2), my = cy ?? (view.y + view.h/2);
+    const newW = view.w / factor, newH = view.h / factor;
+    view.x = mx - (mx - view.x)/factor; view.y = my - (my - view.y)/factor; view.w = newW; view.h = newH; setViewBox();
   }
-
   let drag = null;
   function svgPointFromClient(clientX, clientY) {
     const rect = wrap.getBoundingClientRect();
-    const x = view.x + (clientX - rect.left) / rect.width * view.w;
-    const y = view.y + (clientY - rect.top) / rect.height * view.h;
-    return {x,y};
+    return { x: view.x + (clientX - rect.left) / rect.width * view.w, y: view.y + (clientY - rect.top) / rect.height * view.h };
   }
-
   wrap.addEventListener('pointerdown', e => {
+    if (e.target.closest('.node')) return;
     wrap.setPointerCapture(e.pointerId);
     drag = {x:e.clientX, y:e.clientY, viewX:view.x, viewY:view.y};
   });
   wrap.addEventListener('pointermove', e => {
     if (!drag) return;
     const rect = wrap.getBoundingClientRect();
-    const dx = (e.clientX - drag.x) / rect.width * view.w;
-    const dy = (e.clientY - drag.y) / rect.height * view.h;
+    const dx = (e.clientX-drag.x)/rect.width*view.w;
+    const dy = (e.clientY-drag.y)/rect.height*view.h;
     view.x = drag.viewX - dx;
     view.y = drag.viewY - dy;
     setViewBox();
@@ -1600,29 +1598,28 @@ body{overflow:hidden}
   wrap.addEventListener('pointercancel', endDrag);
   wrap.addEventListener('wheel', e => {
     e.preventDefault();
-    const p = svgPointFromClient(e.clientX, e.clientY);
-    zoom(e.deltaY < 0 ? 1.15 : 0.87, p.x, p.y);
+    const p=svgPointFromClient(e.clientX,e.clientY);
+    zoom(e.deltaY<0?1.15:0.87,p.x,p.y);
   }, {passive:false});
 
-  // Touch pinch
   let pinch = null;
   wrap.addEventListener('touchstart', e => {
     if (e.touches.length === 2) {
-      const [a,b] = e.touches;
-      const dist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
-      const mid = {x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2};
-      pinch = {dist, mid, view:{...view}};
+      const [a,b]=e.touches;
+      const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      const mid={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+      pinch={dist,mid,view:{...view}};
     }
   }, {passive:false});
   wrap.addEventListener('touchmove', e => {
     if (e.touches.length === 2 && pinch) {
       e.preventDefault();
-      const [a,b] = e.touches;
-      const dist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
-      const factor = dist / pinch.dist;
-      view = {...pinch.view};
-      const p = svgPointFromClient(pinch.mid.x, pinch.mid.y);
-      zoom(factor, p.x, p.y);
+      const [a,b]=e.touches;
+      const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      const factor=dist/pinch.dist;
+      view={...pinch.view};
+      const p=svgPointFromClient(pinch.mid.x,pinch.mid.y);
+      zoom(factor,p.x,p.y);
     }
   }, {passive:false});
   wrap.addEventListener('touchend', () => pinch = null);
@@ -1631,80 +1628,115 @@ body{overflow:hidden}
   resetBtn.onclick = reset;
   zoomInBtn.onclick = () => zoom(1.2);
   zoomOutBtn.onclick = () => zoom(0.83);
-  panelClose.onclick = () => infoFrame.srcdoc = '<p style="font-family:Arial;padding:1rem">Panel kapatıldı.</p>';
+  panelClose.onclick = closeModal;
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-  function clearHighlights() {
-    nodes.forEach(n => n.classList.remove('highlight','blink'));
+  function closeModal() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
   }
+  function openModal() {
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function clearHighlights() { nodes.forEach(n => n.classList.remove('highlight','blink')); }
   function highlightNode(node) {
     clearHighlights();
     node.classList.add('highlight','blink');
     const rect = node.querySelector('rect');
-    const x = parseFloat(rect.getAttribute('x'));
-    const y = parseFloat(rect.getAttribute('y'));
-    const w = parseFloat(rect.getAttribute('width'));
-    const h = parseFloat(rect.getAttribute('height'));
-    // center view around the node
-    view.x = Math.max(0, x + w/2 - view.w/2);
-    view.y = Math.max(0, y + h/2 - view.h/2);
+    const x=+rect.getAttribute('x'), y=+rect.getAttribute('y'), w=+rect.getAttribute('width'), h=+rect.getAttribute('height');
+    view.x = Math.max(-20, x + w/2 - view.w/2);
+    view.y = Math.max(-20, y + h/2 - view.h/2);
     setViewBox();
+    setTimeout(() => node.classList.remove('blink'), 3600);
   }
-
   function findNode(name) {
-    const q = name.toLowerCase().trim();
-    return nodes.find(n => (n.dataset.name || '').toLowerCase().includes(q));
+    const q=name.toLowerCase().trim();
+    return nodes.find(n => (n.dataset.name||'').toLowerCase().includes(q));
   }
 
-  async function fetchWikiSummary(url) {
+  async function resolveWiki(url) {
     try {
       if (!url || !/wikipedia\.org/.test(url)) return null;
-      let apiUrl = '';
-      if (url.includes('/wiki/')) {
-        const m = url.match(/https?:\/\/(tr|en)\.wikipedia\.org\/wiki\/(.+)$/);
-        if (m) {
-          apiUrl = `https://${m[1]}.wikipedia.org/api/rest_v1/page/summary/${m[2]}`;
-        }
-      } else if (url.includes('Special:Search?search=')) {
-        const lang = /https?:\/\/(tr|en)\.wikipedia/.exec(url)?.[1] || 'en';
-        const term = decodeURIComponent(url.split('search=')[1] || '');
-        apiUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`;
+      const lang = /https?:\/\/(tr|en)\.wikipedia/.exec(url)?.[1] || 'en';
+      let title = '';
+      const direct = url.match(/\/wiki\/(.+)$/);
+      if (direct) title = decodeURIComponent(direct[1]);
+      else if (url.includes('Special:Search?search=')) {
+        const term = decodeURIComponent((url.split('search=')[1]||'').replace(/\+/g,' '));
+        const searchApi = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&utf8=1&format=json&origin=*`;
+        const rs = await fetch(searchApi);
+        const js = await rs.json();
+        title = js?.query?.search?.[0]?.title || term;
       }
-      if (!apiUrl) return null;
-      const r = await fetch(apiUrl, {headers: {'accept':'application/json'}});
-      if (!r.ok) return null;
-      return await r.json();
-    } catch(e) {
-      return null;
-    }
+      if (!title) return null;
+      return {lang, title};
+    } catch(e) { return null; }
   }
 
-  function makeSrcDoc(name, summary, links) {
-    const safe = s => (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-    const buttons = links.filter(x => x.url).map(x => `<a href="${safe(x.url)}" target="_blank" style="display:inline-block;margin:6px 6px 0 0;padding:8px 10px;border:1px solid #d7e2f1;border-radius:10px;text-decoration:none;color:#1d4b91;background:#f8fbff;font:13px Arial">${safe(x.label)}</a>`).join('');
-    const img = summary?.thumbnail?.source ? `<img src="${safe(summary.thumbnail.source)}" style="max-width:110px;max-height:110px;float:right;margin-left:10px;border-radius:10px">` : '';
-    const desc = summary?.description ? `<div style="color:#5f6f8f;margin:.3rem 0 .5rem">${safe(summary.description)}</div>` : '';
-    const extract = summary?.extract ? `<div>${safe(summary.extract)}</div>` : '<div>Bu isim için gömülebilir kısa özet bulunamadı. Aşağıdaki bağlantıları kullanabilirsiniz.</div>';
-    return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font:14px Arial,Helvetica,sans-serif;padding:12px;margin:0;color:#1f2a44}a{word-break:break-word}</style></head><body><h3 style="margin:0 0 .5rem">${safe(name)}</h3>${img}${desc}${extract}<div style="clear:both"></div><div style="margin-top:10px">${buttons}</div></body></html>`;
+  async function fetchWikiRendered(url) {
+    const resolved = await resolveWiki(url);
+    if (!resolved) return null;
+    const {lang,title} = resolved;
+    const api = `https://${lang}.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text|displaytitle&formatversion=2&format=json&origin=*`;
+    const sumApi = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g,'_'))}`;
+    const [r1,r2] = await Promise.allSettled([fetch(api), fetch(sumApi)]);
+    let htmlText='', displayTitle=title, thumb='';
+    if (r1.status==='fulfilled' && r1.value.ok) { const j = await r1.value.json(); htmlText = j?.parse?.text || ''; displayTitle = j?.parse?.displaytitle || title; }
+    if (r2.status==='fulfilled' && r2.value.ok) { const s = await r2.value.json(); thumb = s?.thumbnail?.source || ''; }
+    if (!htmlText) return null;
+    htmlText = htmlText.replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<script[\s\S]*?<\/script>/gi,'');
+    htmlText = htmlText.replace(/href="\/(wiki\/[^\"]+)"/g, `href="https://${lang}.wikipedia.org/$1" target="_blank"`);
+    htmlText = htmlText.replace(/src="\/\//g,'src="https://').replace(/src="\/(?!\/)/g,`src="https://${lang}.wikipedia.org/`);
+    return {lang, title, displayTitle, htmlText, thumb, pageUrl:`https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g,'_'))}`};
   }
 
-  async function openInfo(name, wikiTr, wikiEn, google) {
-    panelTitle.textContent = name;
-    const links = [
-      {label:'Wikipedia TR', url: wikiTr || ''},
-      {label:'Wikipedia EN', url: wikiEn || ''},
-      {label:'Google', url: google || ('https://www.google.com/search?q=' + encodeURIComponent(name))},
-      {label:'Google Scholar', url: 'https://scholar.google.com/scholar?q=' + encodeURIComponent(name)},
-      {label:'ResearchGate', url: 'https://www.researchgate.net/search?q=' + encodeURIComponent(name)},
+  function placeholderDoc(title, message, url='') {
+    const btn = url ? `<p><a href="${url}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 12px;border:1px solid #d7e2f1;border-radius:10px;background:#f8fbff;color:#1d4b91;text-decoration:none">Yeni sayfada aç</a></p>` : '';
+    return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font:14px Arial;padding:16px;color:#1f2a44}h3{margin-top:0}</style></head><body><h3>${title}</h3><p>${message}</p>${btn}</body></html>`;
+  }
+
+  function wikiDoc(data) {
+    const thumb = data.thumb ? `<img src="${data.thumb}" style="max-width:130px;max-height:130px;float:right;margin:0 0 10px 12px;border-radius:12px">` : '';
+    const label = (data.lang === 'tr' ? 'Wikipedia TR' : (data.lang === 'en' ? 'Wikipedia EN' : data.lang));
+    return `<!DOCTYPE html><html lang="${data.lang}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base target="_blank"><style>body{font:15px Arial,Helvetica,sans-serif;line-height:1.55;margin:0;padding:14px;color:#1f2a44}a{color:#1d4b91}img{max-width:100%}table{max-width:100%;overflow:auto;display:block}.infobox,.thumb,.mw-editsection,.shortdescription,.navbox,.metadata,.toc,.reference,.reflist,.catlinks,.mbox-small,.sidebar{display:none!important}</style></head><body><div style="padding-bottom:10px;border-bottom:1px solid #e4eaf4;margin-bottom:12px"><strong>${data.displayTitle}</strong> <span style="color:#6b7a94">(${label})</span> · <a href="${data.pageUrl}">Yeni sayfada aç</a></div>${thumb}${data.htmlText}</body></html>`;
+  }
+
+  function buildActionButtons(links) {
+    const defs = [
+      ['TR','tr',links.wikitr], ['EN','en',links.wikien], ['Google','google',links.google], ['Scholar','scholar',links.scholar], ['RG','rg',links.researchgate]
     ];
-    linkBox.innerHTML = links.filter(x=>x.url).map(x=>`<a href="${x.url}" target="_blank">${x.label}</a>`).join('');
-    summaryBox.textContent = 'Özet yükleniyor...';
-    const summary = await fetchWikiSummary(wikiTr) || await fetchWikiSummary(wikiEn);
-    if (summary) {
-      summaryBox.innerHTML = (summary.thumbnail?.source ? `<img src="${summary.thumbnail.source}" style="max-width:90px;max-height:90px;float:right;margin-left:10px;border-radius:10px">` : '') + `<b>${name}</b>` + (summary.description ? `<div style="color:#5f6f8f;margin:.3rem 0">${summary.description}</div>` : '') + `<div>${summary.extract || ''}</div>`;
-    } else {
-      summaryBox.innerHTML = `<b>${name}</b><div style="margin-top:6px">Bu isim için kısa özet alınamadı. Aşağıdaki bağlantıları kullanabilirsiniz.</div>`;
+    panelActions.innerHTML = defs.map(([label,key,url]) => `
+      <button type="button" data-key="${key}">${label}</button>
+      <a class="miniLink miniOpen" href="${url}" target="_blank" rel="noopener" title="Yeni sayfada aç">↗</a>
+    `).join('');
+    [...panelActions.querySelectorAll('button[data-key]')].forEach(btn => btn.onclick = () => loadIntoFrame(btn.dataset.key, links));
+  }
+
+  async function loadIntoFrame(which, links) {
+    if (which === 'tr' || which === 'en') {
+      infoFrame.srcdoc = placeholderDoc(links.name, 'Wikipedia içeriği yükleniyor...');
+      const data = await fetchWikiRendered(which==='tr' ? links.wikitr : links.wikien);
+      if (data) infoFrame.srcdoc = wikiDoc(data);
+      else infoFrame.srcdoc = placeholderDoc(links.name, which==='tr' ? 'Türkçe Wikipedia sayfası bulunamadı veya yüklenemedi.' : 'İngilizce Wikipedia sayfası bulunamadı veya yüklenemedi.', which==='tr' ? links.wikitr : links.wikien);
+      return;
     }
-    infoFrame.srcdoc = makeSrcDoc(name, summary, links);
+    if (which === 'google') infoFrame.srcdoc = placeholderDoc(links.name, 'Google sonuçları güvenlik kısıtları nedeniyle doğrudan gömülemiyor.', links.google);
+    if (which === 'scholar') infoFrame.srcdoc = placeholderDoc(links.name, 'Google Scholar sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.', links.scholar);
+    if (which === 'rg') infoFrame.srcdoc = placeholderDoc(links.name, 'ResearchGate sayfası güvenlik kısıtları nedeniyle doğrudan gömülemiyor.', links.researchgate);
+  }
+
+  async function openInfo(name, links) {
+    panelTitle.textContent = name;
+    buildActionButtons(links);
+    openModal();
+    const trDirect = links.wikitr && !links.wikitr.includes('Special:Search');
+    const enDirect = links.wikien && !links.wikien.includes('Special:Search');
+    if (trDirect) await loadIntoFrame('tr', links);
+    else if (enDirect) await loadIntoFrame('en', links);
+    else infoFrame.srcdoc = placeholderDoc(name, 'Wikipedia sayfası doğrudan bulunamadı. Aşağıdaki düğmelerden birini kullanabilirsiniz.', links.google);
   }
 
   function runSearch() {
@@ -1713,18 +1745,14 @@ body{overflow:hidden}
     const n = findNode(q);
     if (n) {
       highlightNode(n);
-      openInfo(n.dataset.name, n.dataset.wikitr, n.dataset.wikien, n.dataset.google);
+      const links = getLinks(n);
+      openInfo(links.name, links);
     }
   }
-  searchBox.addEventListener('keydown', e => {
-    if (e.key === 'Enter') runSearch();
-  });
-  searchBox.addEventListener('search', runSearch);
 
-  // initial fit after layout
-  window.addEventListener('load', () => {
-    setTimeout(fit, 80);
-  });
+  searchBox.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  searchBox.addEventListener('search', runSearch);
+  window.addEventListener('load', () => setTimeout(fit, 80));
   window.addEventListener('resize', () => setTimeout(fit, 50));
 })();
 </script>
